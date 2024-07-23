@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pmbb-data"
+version = "0.0.1"
+description = "Data structures and IO for the Penn Medicine BioBank (PMBB)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+keywords = ["pmbb", "medical", "biobank"]
+authors = [
+  {name = "Michael S. Yao", email = "michael.yao@pennmedicine.upenn.edu" }
+]
+maintainers = [
+  {name = "Michael S. Yao", email = "michael.yao@pennmedicine.upenn.edu" }
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+  "torch", "numpy", "nibabel"
+]
