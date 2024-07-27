@@ -8,10 +8,9 @@ Author(s):
 Licensed under the MIT License. Copyright University of Pennsylvania 2024.
 """
 import numpy as np
-import torch
-from typing import Generator, Optional, Sequence, Tuple, Union
+from typing import Generator, Optional, Tuple, Union
 
-from .base import PMBB, BatchedStudy, Study
+from .pmbb import PMBB
 
 
 def train_test_split(
@@ -87,20 +86,3 @@ def train_test_split(
         patients=[dataset.patients[idx] for idx in pt_idxs[train_eidx:]]
     )
     return train, test
-
-
-def collate_fn(studies: Sequence[Study]) -> BatchedStudy:
-    """
-    Collates a list of studies into a single BatchedStudy object.
-    Input:
-        studies: a list of studies to collate.
-    Returns:
-        A batched study containing the collated studies.
-    """
-    # TODO: Vision data might have different sizes - need to crop or pad.
-    return BatchedStudy(
-        pmbb_id=[st.pmbb_id for st in studies],
-        nifti=torch.cat([st.nifti.unsqueeze(dim=0) for st in studies], dim=0),
-        nifti_metadata=[st.nifti_metadata for st in studies],
-        report=[st.report for st in studies]
-    )

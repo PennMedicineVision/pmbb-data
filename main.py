@@ -12,7 +12,7 @@ import os
 from pmbb_data import PMBB
 from pmbb_data.utils import train_test_split
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 
 @click.command()
@@ -25,6 +25,22 @@ from typing import Optional, Union
     help="Optional cache file for the PMBB dataset."
 )
 @click.option(
+    "-m",
+    "--modality",
+    type=str,
+    multiple=True,
+    required=False,
+    help="Optional imaging modalities to filter by (i.e., include)."
+)
+@click.option(
+    "-b",
+    "--body-part-examined",
+    type=str,
+    multiple=True,
+    required=False,
+    help="Optional anatomic regions to filter by (i.e., include)."
+)
+@click.option(
     "--seed",
     type=int,
     default=42,
@@ -33,6 +49,8 @@ from typing import Optional, Union
 )
 def main(
     cache_fn: Optional[Union[Path, str]] = ".pmbb_cache.pkl",
+    modality: Tuple[str] = tuple([]),
+    body_part_examined: Tuple[str] = tuple([]),
     seed: int = 42
 ):
     """Sample PMBB dataset script."""
@@ -42,6 +60,9 @@ def main(
         ds = PMBB(os.environ["PMBB_DATADIR"])
         if cache_fn is not None:
             ds.write_to_cache(cache_fn)
+
+    ds = ds.filter_by_body_part_examined(list(body_part_examined))
+    ds = ds.filter_by_modality(list(modality))
 
     train, test = train_test_split(ds, random_state=seed)
 

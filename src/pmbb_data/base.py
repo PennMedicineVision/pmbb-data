@@ -7,12 +7,9 @@ Author(s):
 
 Licensed under the MIT License. Copyright University of Pennsylvania 2024.
 """
-from __future__ import annotations
 import json
 import nibabel as nib
-import numpy as np
 import os
-import pickle
 import torch
 from copy import deepcopy
 from pathlib import Path
@@ -120,7 +117,7 @@ class Study:
         Returns:
             The radiology report data of the study (if available).
         """
-        if self.report_fn is None:
+        if self.report_dir is None:
             return {}
         fn = next(
             filter(
@@ -182,8 +179,10 @@ class Patient(Dataset):
         """
         if isinstance(study, Study):
             study = [study]
-        existing_nifti = [st.nifti for st in self._studies]
-        study = list(filter(lambda st: st.nifti not in existing_nifti, study))
+        existing_nifti = [st.nifti_dir for st in self._studies]
+        study = list(
+            filter(lambda st: st.nifti_dir not in existing_nifti, study)
+        )
         for st in study:
             self._studies.append(st)
 
@@ -217,164 +216,3 @@ class Patient(Dataset):
             The specified diagnostic study associated with the patient.
         """
         return self._studies[idx]
-
-
-class PMBB(Dataset):
-    report_dir: str = "Diagnostic-Report"
-
-    def __init__(
-        self,
-        pmbb_vision_dir: Union[Path, str],
-        patients: Optional[Sequence[Patient]] = None
-    ):
-        """
-        Args:
-            pmbb_vision_dir: the parent director of the PMBB dataset.
-            patients: an optional list of cached patients to exclusively load.
-        """
-        self.pmbb_vision_dir = pmbb_vision_dir
-        if patients is not None:
-            self.patients = patients
-        else:
-            self._load_patients()
-            self._associate_studies_to_patients()
-        self.cum_studies = np.cumsum([len(pt) for pt in self.patients])
-
-    @classmethod
-    def load_from_cache(cls, cache_fn: Union[Path, str]) -> PMBB:
-        """
-        Loads a PMBB dataset instance from a cache file.
-        Input:
-            cache_fn: the file path of the cache file.
-        Returns:
-            The PMBB dataset instance loaded from the input cache file.
-        """
-        with open(cache_fn, "rb") as f:
-            patients, pmbb_vision_dir = pickle.load(f)
-        return cls(pmbb_vision_dir, patients=patients)
-
-    def write_to_cache(self, cache_fn: Union[Path, str]) -> None:
-        """
-        Writes the PMBB dataset to a cache file.
-        Input:
-            cache_fn: the cache file path to write to.
-        Returns:
-            None.
-        """
-        cache_dir = os.path.dirname(cache_fn)
-        if len(cache_dir):
-            os.makedirs(cache_dir, exist_ok=True)
-        with open(cache_fn, "wb") as f:
-            pickle.dump((self.patients, self.pmbb_vision_dir), f)
-        return
-
-    def _load_patients(self) -> None:
-        """
-        Loads the patients from the parent PMBB data directory.
-        Input:
-            None.
-        Returns:
-            None.
-        """
-        subject_dirs = [
-            os.path.join(self.pmbb_vision_dir, pref)
-            for pref in os.listdir(self.pmbb_vision_dir)
-        ]
-        full_pmbbid_dirs = [
-            [os.path.join(pref, suff) for suff in os.listdir(pref)]
-            for pref in subject_dirs
-        ]
-        full_pmbbid_dirs = [
-            [os.path.join(d, full) for full in os.listdir(d)]
-            for d in sum(full_pmbbid_dirs, [])
-        ]
-        full_pmbbid_dirs = sum(full_pmbbid_dirs, [])
-
-        # Create all of the patient objects.
-        patients = map(
-            lambda datadir: Patient(os.path.basename(datadir), datadir),
-            full_pmbbid_dirs
-        )
-        self.patients = sorted(list(patients), key=lambda pt: pt.pmbb_id)
-        return
-
-    def __len__(self) -> int:
-        """
-        Returns the total number of unique studies in the dataset.
-        Input:
-            None.
-        Returns:
-            The total number of unique studies in the dataset.
-        """
-        return sum([len(pt) for pt in self.patients])
-
-    def __getitem__(self, idx: int) -> Study:
-        """
-        Returns a diagnostic study from the dataset.
-        Input:
-            idx: the index of the study to retrieve.
-        Returns:
-            The specified diagnostic study from the dataset.
-        """
-        pt_idx = np.searchsorted(self.cum_studies, idx, side="right")
-        st_idx = idx - self.cum_studies[pt_idx]
-        return self.patients[pt_idx][st_idx]
-
-    @property
-    def num_patients(self) -> int:
-        """
-        Returns the total number of unique patients in the dataset.
-        Input:
-            None.
-        Returns:
-            The total number of unique patients in the dataset.
-        """
-        return len(self.patients)
-
-    @property
-    def num_studies(self) -> int:
-        """
-        Returns the total number of unique studies in the dataset.
-        Input:
-            None.
-        Returns:
-            The total number of unique studies in the dataset.
-        """
-        return len(self)
-
-    def _associate_studies_to_patients(self) -> None:
-        """
-        Links the studies in the PMBB dataset to the parent patients.
-        Input:
-            None.
-        Returns:
-            None.
-        """
-        excluded_dirs = ["slurm"]
-        for p in self.patients:
-            studies = [
-                [os.path.join(_id, study) for study in os.listdir(_id)]
-                for _id in [
-                    os.path.join(p.datadir, x) for x in os.listdir(p.datadir)
-                ]
-            ]
-            studies = filter(
-                lambda st: not any([
-                    st.lower().endswith(ex) for ex in excluded_dirs
-                ]),
-                sum(studies, [])
-            )
-            studies = list(studies)
-
-            reports = filter(
-                lambda st: self.report_dir.lower() in st.lower(), studies
-            )
-            reports = list(reports)
-
-            for st in studies:
-                rep = filter(
-                    lambda rep: os.path.dirname(st) == os.path.dirname(rep),
-                    reports
-                )
-                rep = list(rep)
-                p.add_study(Study(p.pmbb_id, st, rep[0] if len(rep) else None))

@@ -7,7 +7,8 @@ Author(s):
 
 Licensed under the MIT License. Copyright University of Pennsylvania 2024.
 """
-from .base import Study, BatchedStudy, Patient, PMBB
+from .base import Study, BatchedStudy, Patient
+from .pmbb import PMBB
 from . import utils
 
 
