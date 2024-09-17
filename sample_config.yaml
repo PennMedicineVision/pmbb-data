@@ -1,0 +1,11 @@
+---
+vision:
+  img_shape: [256, 256]
+language:
+  tokenizer: "databricks/dbrx-instruct"
+body_parts_examined:
+  - "CHEST"
+  - "ABDOMEN"
+modality:
+  - "CT"
+seed: 0

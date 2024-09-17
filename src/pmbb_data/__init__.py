@@ -7,15 +7,11 @@ Author(s):
 
 Licensed under the MIT License. Copyright University of Pennsylvania 2024.
 """
-from .base import Study, BatchedStudy, Patient
-from .pmbb import PMBB
-from . import utils
+from . import utils, config, core
 
 
 __all__ = [
-    "Study",
-    "BatchedStudy",
-    "Patient",
-    "PMBB",
-    "utils"
+    "utils",
+    "config",
+    "core"
 ]

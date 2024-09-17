@@ -227,6 +227,7 @@ class PMBB(Dataset):
             None.
         """
         excluded_dirs = ["slurm"]
+        report_dir_key = "Diagnostic-Report"
         for p in self.patients:
             studies = [
                 [os.path.join(_id, study) for study in os.listdir(_id)]
@@ -236,7 +237,8 @@ class PMBB(Dataset):
             ]
             studies = filter(
                 lambda st: not any([
-                    st.lower().endswith(ex) for ex in excluded_dirs
+                    st.lower().endswith(ex)
+                    for ex in (excluded_dirs + [report_dir_key])
                 ]),
                 sum(studies, [])
             )
@@ -252,18 +254,15 @@ class PMBB(Dataset):
             )
             studies = list(studies)
 
-            reports = filter(
-                lambda st: self.report_dir.lower() in st.lower(), studies
+            report = None
+            report_dir = os.path.join(
+                os.path.dirname(studies[0]), report_dir_key
             )
-            reports = list(reports)
+            if os.path.isdir(report_dir):
+                report = report_dir
 
             for st in studies:
-                rep = filter(
-                    lambda rep: os.path.dirname(st) == os.path.dirname(rep),
-                    reports
-                )
-                rep = list(rep)
-                p.add_study(Study(p.pmbb_id, st, rep[0] if len(rep) else None))
+                p.add_study(Study(p.pmbb_id, st, report))
 
     @staticmethod
     def collate_fn(studies: Sequence[Study]) -> BatchedStudy:
@@ -284,3 +283,77 @@ class PMBB(Dataset):
             nifti_metadata=nifti_metadata,
             report=report
         )
+
+    @staticmethod
+    def get_modality_options() -> Sequence[str]:
+        """
+        Returns the imaging modalities available in the dataset.
+        Input:
+            None.
+        Returns:
+            The imaging modalities present in the PMBB dataset.
+        """
+        return ["CR", "CT", "MR", "US"]
+
+    @staticmethod
+    def get_body_part_examined_options() -> Sequence[str]:
+        """
+        Returns the imaging modalities available in the dataset.
+        Input:
+            None.
+        Returns:
+            The imaging modalities present in the PMBB dataset.
+        """
+        return [
+            "ABDOMEN",
+            "ABDOMEN_CT_ABD_UNEN_PE",
+            "ABDOMEN_PELVIS",
+            "ABDPEL",
+            "ABDPL",
+            "ABD_PEL",
+            "ABD_PELVIS",
+            "AORTA",
+            "CAP",
+            "CAP_W",
+            "CERVIX",
+            "CHEAT",
+            "CHEST",
+            "CHEST_ABD",
+            "CHEST_ABDOMEN",
+            "CHEST_ABD_PELV",
+            "CHEST_TO_PELVIS",
+            "CHEST_WITHOUT",
+            "CHST",
+            "CH_AB_PEL",
+            "COLON",
+            "CSPINE",
+            "CST_ABD_PEL",
+            "CTA_ABD_AORTA_RU",
+            "CTA_CHEST",
+            "CTA_RUNOFF",
+            "CT_ABDOMEN_PELVIS_W",
+            "C_A_P",
+            "EXTREMITY",
+            "GASTRO",
+            "GU",
+            "HEAD",
+            "HEAD_NECK",
+            "HEART",
+            "KIDNEY_URETER_BL",
+            "LIVER_GALLBLADDE",
+            "LSPINE",
+            "LUMBAR_SPINE",
+            "NECK",
+            "NECK_CHEST_ABD",
+            "OTHER",
+            "PELVIS",
+            "PE_CHEST",
+            "RUNOFF",
+            "SHOULDER",
+            "SPINE",
+            "THORACIC_AORTA",
+            "TORSO",
+            "TSPINE",
+            "UNKNOWN",
+            "VESSEL"
+        ]

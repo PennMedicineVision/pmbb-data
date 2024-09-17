@@ -16,15 +16,19 @@ cd pmbb-data
 python -m pip install .
 ```
 
-Prior to usage, please set the home directory of the PMBB vision-language dataset to the `PMBB_DATADIR` environmental variable. For example,
+Prior to usage, please run the [`setup.sh`](setup.sh) script provided in the repository:
 
 ```
-export PMBB_DATADIR=/cbica/projects/pmbb-vision/subjects
+bash setup.sh
 ```
 
-Example usage can be found in in the [`main.py`](main.py) sample script.
+Example usage can be found in in the [`example_usage.py`](example_usage.py) sample script.
 
 ## Changelog
+
+### Version 0.0.3
+
+- Significantly updated the API and moved study/series/report discovery logic to `setup.sh`.
 
 ### Version 0.0.2
 

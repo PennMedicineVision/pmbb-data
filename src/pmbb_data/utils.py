@@ -10,16 +10,16 @@ Licensed under the MIT License. Copyright University of Pennsylvania 2024.
 import numpy as np
 from typing import Generator, Optional, Tuple, Union
 
-from .pmbb import PMBB
+from .core import PMBBDataset, PMBBIndex
 
 
 def train_test_split(
-    dataset: PMBB,
+    dataset: PMBBDataset,
     test_size: Optional[Union[float, int]] = None,
     train_size: Optional[Union[float, int]] = None,
     random_state: Optional[Union[int, Generator]] = None,
     shuffle: bool = True
-) -> Tuple[PMBB]:
+) -> Tuple[PMBBDataset]:
     """
     Splits a PMBB dataset into random train and test subsets.
     Input:
@@ -67,22 +67,52 @@ def train_test_split(
         assert train_size + test_size == len(dataset)
 
     pt_idxs = np.arange(dataset.num_patients)
-    num_studies_per_patient = np.array([len(pt) for pt in dataset.patients])
     if shuffle:
         random_state.shuffle(pt_idxs)
-        num_studies_per_patient = num_studies_per_patient[pt_idxs]
         for pt in dataset.patients:
             random_state.shuffle(pt._studies)
-    train_eidx = np.searchsorted(
-        np.cumsum(num_studies_per_patient), train_size, side="right"
+
+    train = PMBBDataset(
+        patients=[dataset.patients[idx] for idx in pt_idxs[:train_size]]
+    )
+    test = PMBBDataset(
+        patients=[dataset.patients[idx] for idx in pt_idxs[train_size:]]
     )
 
-    train = PMBB(
-        pmbb_vision_dir=dataset.pmbb_vision_dir,
-        patients=[dataset.patients[idx] for idx in pt_idxs[:train_eidx]]
-    )
-    test = PMBB(
-        pmbb_vision_dir=dataset.pmbb_vision_dir,
-        patients=[dataset.patients[idx] for idx in pt_idxs[train_eidx:]]
-    )
+    # Reconstruct the trainin indices.
+    train_idxs = []
+    for pt_idx in range(train.num_patients):
+        for st_idx in range(train._patients[pt_idx].num_studies):
+            for s_idx in range(
+                train._patients[pt_idx]._studies[st_idx].num_series
+            ):
+                train_idxs.append(PMBBIndex(pt_idx, st_idx, s_idx))
+    random_state.shuffle(train_idxs)
+    train._idxs = train_idxs
+    train_seed = dataset._seed
+    if dataset._seed is not None:
+        train_seed += sum([ord(c) for c in "train"])
+    train._rng = np.random.default_rng(seed=train_seed)
+    train._vision_config = dataset._vision_config
+    train._language_config = dataset._language_config
+    train._tokenizer = dataset._tokenizer
+
+    # Reconstruct the trainin indices.
+    test_idxs = []
+    for pt_idx in range(test.num_patients):
+        for st_idx in range(test._patients[pt_idx].num_studies):
+            for s_idx in range(
+                test._patients[pt_idx]._studies[st_idx].num_series
+            ):
+                test_idxs.append(PMBBIndex(pt_idx, st_idx, s_idx))
+    random_state.shuffle(test_idxs)
+    test._idxs = test_idxs
+    test_seed = dataset._seed
+    if dataset._seed is not None:
+        test_seed += sum([ord(c) for c in "test"])
+    test._rng = np.random.default_rng(seed=test_seed)
+    test._vision_config = dataset._vision_config
+    test._language_config = dataset._language_config
+    test._tokenizer = dataset._tokenizer
+
     return train, test
