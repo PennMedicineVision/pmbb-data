@@ -16,7 +16,7 @@ from .base import PMBBObject
 
 
 class Report(PMBBObject):
-    report_ext: str = ".json"
+    report_ext: str = ".txt"
 
     @staticmethod
     def get_metadata_from_filepath(
@@ -52,19 +52,5 @@ class Report(PMBBObject):
         Returns:
             The imaging study metadata associated with the series.
         """
-        fn = filter(
-            lambda x: x.endswith(self.report_ext), os.listdir(self._fn)
-        )
-        try:
-            with open(
-                os.path.join(self._fn, next(fn)),
-                "r",
-                encoding="utf-8",
-                errors="ignore"
-            ) as f:
-                metadata = "\n".join(f.readlines())
-        except StopIteration:
-            return None
-        report = json.loads(metadata.replace("+", ""))
-        report = report["0040A730"]["Value"][0]["0040A160"]["Value"][0]
-        return report.strip().replace("\r", "\n")
+        with open(self._fn, "r") as f:
+            return "".join(f.readlines())

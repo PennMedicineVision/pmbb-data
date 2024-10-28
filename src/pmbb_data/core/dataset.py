@@ -336,8 +336,8 @@ class PMBBDataset(Dataset):
                 config.body_parts_examined, inplace=True
             )
 
-        if config.modality is not None:
-            self.filter_by_modality(config.modality, inplace=True)
+        if config.modalities is not None:
+            self.filter_by_modality(config.modalities, inplace=True)
 
         if self._language_config is not None:
             for pt in tqdm(self.patients, desc="Configuring Datatypes"):

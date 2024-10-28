@@ -20,7 +20,6 @@ class PMBBObject(abc.ABC):
             fn: the filepath of the series folder.
         """
         self._fn: Final = fn.strip()
-        assert os.path.isdir(self._fn)
         self._metadata: Final = self.get_metadata_from_filepath(self._fn)
         for key, val in kwargs.items():
             setattr(self, key, val)

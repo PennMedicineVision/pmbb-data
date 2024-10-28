@@ -16,7 +16,7 @@ from tqdm import tqdm
 from typing import Optional, Union
 
 from pmbb_data.core import PMBBDataset, Series
-from pmbb_data.config import PMBBConfig
+from pmbb_data.config import PMBBConfig, PMBBVisionConfig, PMBBLanguageConfig
 from pmbb_data.utils import train_test_split
 
 
@@ -47,7 +47,12 @@ def main(
     batch_size: int = 4,
 ):
     """Example usage of the PMBB Data repository."""
-    config = PMBBConfig.from_yaml(config)
+    config = PMBBConfig(
+        modalities=["CT"],
+        body_parts_examined=None,
+        vision=PMBBVisionConfig(img_shape=(128, 128)),
+        seed=0
+    )
 
     if os.path.isfile(cache):
         ds = PMBBDataset.from_pickle(cache)
@@ -55,6 +60,8 @@ def main(
         ds = PMBBDataset()
         ds.load_config(config)
         ds.to_pickle(cache)
+
+    ds.load_config(config)
 
     train, test = train_test_split(ds, test_size=0.2)
 
@@ -69,7 +76,17 @@ def main(
         collate_fn=sample_collate_fn
     )
 
-    model = nn.Identity()  # Dummy model.
+    print("##################")
+    print(f"Modalities: {config.modalities}")
+    print(f"BPE: {config.body_parts_examined}")
+    print(f"Vision: {config.vision is not None}")
+    print(f"Language: {config.language is not None}")
+    print(f"Num Patients: {ds.num_patients}")
+    print(f"Num Studies: {ds.num_studies}")
+    print(f"Num Series: {ds.num_series}")
+    print("##################")
+    print()
+    exit()
 
     # Dummy usage.
     for img, txt in tqdm(train_dataloader):
